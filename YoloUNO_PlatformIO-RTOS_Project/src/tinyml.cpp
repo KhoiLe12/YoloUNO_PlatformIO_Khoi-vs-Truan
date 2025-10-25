@@ -73,11 +73,11 @@ void tiny_ml_task(void *pvParameters){
         return;
         }
 
-    // Get and process output
-    float result = output->data.f[0];
-    // Single atomic print helps avoid fragmented USB CDC output
-    Serial.printf("TinyML in: T=%.2fC H=%.1f%%  ->  score=%.3f\r\n", (double)t, (double)h, (double)result);
-        Serial.flush();
+        // Get and process output
+        float result = output->data.f[0];
+        // Single atomic print helps avoid fragmented USB CDC output
+        Serial.printf("TinyML in: T=%.2fC H=%.1f%%  ->  score=%.3f\r\n", (double)t, (double)h, (double)result);
+            Serial.flush();
 
         vTaskDelay(5000); 
     }
