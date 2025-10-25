@@ -1,4 +1,5 @@
 #include "tinyml.h"
+#include "temp_humi_monitor.h"  // get_latest_temperature/get_latest_humidity
 
 // Globals, for the convenience of one-shot setup.
 namespace {
@@ -47,10 +48,23 @@ void tiny_ml_task(void *pvParameters){
 
     while(1){
        
-        // Prepare input data (e.g., sensor readings)
-        // For a simple example, let's assume a single float input
-        input->data.f[0] = 20.5; 
-        input->data.f[1] = 80.5; 
+        // Prepare input data from real sensors
+        float t = get_latest_temperature();
+        float h = get_latest_humidity();
+
+        // Wait until we have valid readings
+        if (isnan(t) || isnan(h)) {
+            // Sensor task may not have provided values yet
+            vTaskDelay(pdMS_TO_TICKS(200));
+            continue;
+        }
+
+        // Optional: clamp to plausible ranges to avoid outliers
+        if (t < -40.0f) t = -40.0f; if (t > 125.0f) t = 125.0f;
+        if (h < 0.0f)   h = 0.0f;   if (h > 100.0f) h = 100.0f;
+
+        input->data.f[0] = t;
+        input->data.f[1] = h;
 
         // Run inference
         TfLiteStatus invoke_status = interpreter->Invoke();
@@ -59,10 +73,11 @@ void tiny_ml_task(void *pvParameters){
         return;
         }
 
-        // Get and process output
-        float result = output->data.f[0];
-        Serial.print("Inference result: ");
-        Serial.println(result);
+    // Get and process output
+    float result = output->data.f[0];
+    // Single atomic print helps avoid fragmented USB CDC output
+    Serial.printf("TinyML in: T=%.2fC H=%.1f%%  ->  score=%.3f\r\n", (double)t, (double)h, (double)result);
+        Serial.flush();
 
         vTaskDelay(5000); 
     }
