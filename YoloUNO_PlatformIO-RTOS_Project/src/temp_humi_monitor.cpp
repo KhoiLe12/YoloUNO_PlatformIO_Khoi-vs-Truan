@@ -1,36 +1,43 @@
 #include "temp_humi_monitor.h"
+#include "led_blinky.h"  // LedMode, set_led_mode, TEMP_*_C
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 DHT20 dht20;
 LiquidCrystal_I2C lcd(33,16,2);
 
+static volatile float latest_temperature = NAN;
+static volatile float latest_humidity = NAN;
+
+float get_latest_temperature(void) { return latest_temperature; }
+float get_latest_humidity(void)    { return latest_humidity; }
 
 void temp_humi_monitor(void *pvParameters){
-
-    Wire.begin(11, 12);
-    Serial.begin(115200);
     dht20.begin();
 
     while (1){
-        /* code */
-        
         dht20.read();
-        // Reading temperature in Celsius
         float temperature = dht20.getTemperature();
-        // Reading humidity
-        float humidity = dht20.getHumidity();
+        float humidity    = dht20.getHumidity();
 
-        // Check if any reads failed and exit early
         if (isnan(temperature) || isnan(humidity)) {
-            Serial.println("Failed to read from DHT sensor!");
-            return;
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            continue;
         }
 
-        // Print the results
-        Serial.print("Humidity: ");
-        Serial.print(humidity);
-        Serial.print("%  Temperature: ");
-        Serial.print(temperature);
-        Serial.println("°C");
-        vTaskDelay(5000);
+        latest_temperature = temperature;
+        latest_humidity    = humidity;
+
+        // 3-state policy using thresholds from led_blinky.h
+        if (temperature >= TEMP_HIGH_C) {
+            set_led_mode(LED_ON);
+        } else if (temperature >= TEMP_LOW_C) {
+            set_led_mode(LED_BLINK);
+        } else {
+            set_led_mode(LED_OFF);
+        }
+
+
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
-    
 }
