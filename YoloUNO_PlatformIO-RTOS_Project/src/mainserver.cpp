@@ -8,7 +8,7 @@ bool isAPMode = true;
 
 WebServer server(80);
 
-String ssid = "ESP32-AP";
+String ssid = "ESP32-TK";
 String password = "12345678";
 String wifi_ssid = "";
 String wifi_password = "";
