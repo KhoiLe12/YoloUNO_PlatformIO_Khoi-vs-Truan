@@ -11,6 +11,10 @@
 volatile LedMode g_ledMode = LED_OFF;
 SemaphoreHandle_t xLedModeMutex = NULL;
 SemaphoreHandle_t xLedModeChange = NULL;
+// NeoPixel color mode shared objects
+volatile NeoMode g_neoMode = NEO_OFF;
+SemaphoreHandle_t xNeoModeMutex = NULL;
+SemaphoreHandle_t xNeoModeChange = NULL;
 
 void setup() {
   Serial.begin(115200);
@@ -27,17 +31,20 @@ void setup() {
   // create synchronization objects BEFORE creating tasks
   xLedModeMutex = xSemaphoreCreateMutex();
   xLedModeChange = xSemaphoreCreateBinary();
-  if (xLedModeMutex == NULL || xLedModeChange == NULL) {
-    Serial.println("Failed to create LED semaphores");
+  xNeoModeMutex = xSemaphoreCreateMutex();
+  xNeoModeChange = xSemaphoreCreateBinary();
+  if (xLedModeMutex == NULL || xLedModeChange == NULL ||
+      xNeoModeMutex == NULL || xNeoModeChange == NULL) {
+    Serial.println("Failed to create semaphores");
     while (1) vTaskDelay(pdMS_TO_TICKS(1000));
   }
 
   // create tasks
   xTaskCreate(temp_humi_monitor, "Task TEMP HUMI Monitor", 2048, NULL, 2, NULL);
   xTaskCreate(led_blinky, "Task LED Blink", 2048, NULL, 2, NULL);
-  // xTaskCreate(neo_blinky, "Task NEO Blink", 2048, NULL, 2, NULL);
+  xTaskCreate(neo_blinky, "Task NEO Blink", 2048, NULL, 2, NULL);
   // xTaskCreate(main_server_task, "Task Main Server", 2048, NULL, 2, NULL);
-  xTaskCreate(tiny_ml_task, "Tiny ML Task", 4096, NULL, 2, NULL);
+  //xTaskCreate(tiny_ml_task, "Tiny ML Task", 4096, NULL, 2, NULL);
 }
 
 void loop() { 
