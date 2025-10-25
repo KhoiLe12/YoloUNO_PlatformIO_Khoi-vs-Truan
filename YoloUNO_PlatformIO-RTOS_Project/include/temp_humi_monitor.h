@@ -5,6 +5,7 @@
 #include "DHT20.h"
 
 void temp_humi_monitor(void *pvParameters);
-
+float get_latest_temperature(void);
+float get_latest_humidity(void);
 
 #endif
