@@ -3,6 +3,7 @@
 #include "neo_blinky.h"  // NeoMode, set_neo_mode, HUM_* thresholds
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include "i2c_bus.h"
 
 DHT20 dht20;
 LiquidCrystal_I2C lcd(33,16,2);
@@ -14,10 +15,25 @@ float get_latest_temperature(void) { return latest_temperature; }
 float get_latest_humidity(void)    { return latest_humidity; }
 
 void temp_humi_monitor(void *pvParameters){
-    dht20.begin();
+    // Guard sensor init on the I2C bus
+    if (i2c_lock()) {
+        dht20.begin();
+        i2c_unlock();
+    }
 
     while (1){
-        dht20.read();
+        // Serialize the full sensor read sequence
+        int rd = -1;
+        if (i2c_lock()) {
+            rd = dht20.read();
+            i2c_unlock();
+        }
+
+        if (rd < 0) {
+            // On read failure, wait a bit and try next cycle
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            continue;
+        }
         float temperature = dht20.getTemperature();
         float humidity    = dht20.getHumidity();
 
@@ -51,3 +67,4 @@ void temp_humi_monitor(void *pvParameters){
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
+
