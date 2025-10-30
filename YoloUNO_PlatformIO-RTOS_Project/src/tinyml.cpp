@@ -79,6 +79,6 @@ void tiny_ml_task(void *pvParameters){
         Serial.printf("TinyML in: T=%.2fC H=%.1f%%  ->  score=%.3f\r\n", (double)t, (double)h, (double)result);
             Serial.flush();
 
-        vTaskDelay(5000); 
+        vTaskDelay(1000); 
     }
 }
