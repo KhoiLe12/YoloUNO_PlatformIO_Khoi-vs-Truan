@@ -1,0 +1,21 @@
+#include "lcd_display.h"
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void lcdTask(void *pvParameters) {
+  while (true) {
+    lcd.setCursor(0, 0);
+    lcd.print("Temp: --C Hum: --%");
+    lcd.setCursor(0, 1);
+    lcd.print("Motor: Updating..");
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+  }
+}
+
+void initLCD() {
+  lcd.init();
+  lcd.backlight();
+  xTaskCreatePinnedToCore(lcdTask, "LCD", 2048, NULL, 1, NULL, 1);
+}
